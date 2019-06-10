@@ -10,7 +10,29 @@ import (
 	"strings"
 )
 
-func MakeTar(path string, writer io.Writer) error {
+func contains(collection []string, text string) bool {
+	for index := range collection {
+		if collection[index] == text {
+			return true
+		}
+	}
+	return false
+}
+
+func hasParentIn(parentCandidates []string, childPath string) bool {
+	for index := range parentCandidates {
+		if isParentOf(parentCandidates[index], childPath) {
+			return true
+		}
+	}
+	return false
+}
+
+func isParentOf(parentDir string, pathToCheck string) bool {
+	return strings.HasPrefix(pathToCheck, parentDir+"/")
+}
+
+func MakeTar(path string, writer io.Writer, dirsToIgnore []string) error {
 	fileInfo, err := os.Stat(path)
 	if err != nil {
 		return err
@@ -37,6 +59,14 @@ func MakeTar(path string, writer io.Writer) error {
 		}
 
 		header.Name = strings.TrimPrefix(strings.Replace(fileName, path, "", -1), string(filepath.Separator))
+
+		if contains(dirsToIgnore, header.Name) {
+			return nil
+		}
+
+		if hasParentIn(dirsToIgnore, header.Name) {
+			return nil
+		}
 
 		if header.Name == "" {
 			return nil
