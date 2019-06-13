@@ -8,8 +8,8 @@ import (
 	"github.com/dheeraj-p/snapshot/targzhelper"
 )
 
-func createSnapshotDir(dirname string) error {
-	if _, err := os.Stat(dirname); os.IsExist(err) {
+func createDirectoryIfNotExists(dirname string) error {
+	if _, err := os.Stat(dirname); err == nil {
 		return nil
 	}
 
@@ -24,13 +24,15 @@ func formattedTimeStamp() string {
 	return time.Now().Format("2006_01_02_15_04_05")
 }
 
-func main() {
-	var snapshotsDirName = ".snapshots"
-
-	if err := createSnapshotDir(snapshotsDirName); err != nil {
+func setupSnapshotDirectory() {
+	if err := createDirectoryIfNotExists(".snapshots"); err != nil {
+		fmt.Println("Came Here")
 		fmt.Println(err)
 	}
+}
 
+func takeSnapshot() {
+	var snapshotsDirName = ".snapshots"
 	destination := fmt.Sprintf("%s/snapshot_%s.tar.gz", snapshotsDirName, formattedTimeStamp())
 	file, err := os.Create(destination)
 
@@ -44,4 +46,47 @@ func main() {
 	if err != nil {
 		fmt.Println(err)
 	}
+
+	fmt.Println("Snapshot is successfully taken")
+}
+
+func showLogs() {
+	fmt.Println("These are your snapshot logs")
+}
+
+func showInvalidOption(option string) {
+	fmt.Printf("Invalid Option - %s\n", option)
+}
+
+func showHelp() {
+	var takeSnapshotHelp = "option: take - To take snapshot of current state"
+	var showLogsHelp = "option: logs - Show info about all the snapshots taken"
+	fmt.Printf("%s\n%s\n", takeSnapshotHelp, showLogsHelp)
+}
+
+func isNoOptionProvided() bool {
+	return len(os.Args) < 2
+}
+
+func main() {
+	setupSnapshotDirectory()
+
+	if isNoOptionProvided() {
+		showHelp()
+		return
+	}
+
+	option := os.Args[1]
+
+	if option == "take" {
+		takeSnapshot()
+		return
+	}
+
+	if option == "logs" {
+		showLogs()
+		return
+	}
+
+	showInvalidOption(option)
 }
