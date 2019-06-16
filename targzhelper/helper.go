@@ -35,7 +35,7 @@ func isParentOf(parentDir string, pathToCheck string) bool {
 func MakeTar(path string, writer io.Writer, dirsToIgnore []string) error {
 	fileInfo, err := os.Stat(path)
 	if err != nil {
-		return err
+		return fmt.Errorf("Invalid Path %s", err.Error())
 	}
 
 	if !fileInfo.IsDir() {
@@ -50,12 +50,12 @@ func MakeTar(path string, writer io.Writer, dirsToIgnore []string) error {
 
 	return filepath.Walk(path, func(fileName string, fileInfo os.FileInfo, err error) error {
 		if err != nil {
-			return err
+			return fmt.Errorf("during walk %s", err)
 		}
 
 		header, err := tar.FileInfoHeader(fileInfo, fileInfo.Name())
 		if err != nil {
-			return err
+			return fmt.Errorf("invalid file header %s", err)
 		}
 
 		header.Name = strings.TrimPrefix(strings.Replace(fileName, path, "", -1), string(filepath.Separator))
