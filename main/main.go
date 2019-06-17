@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 	"os"
+	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/dheeraj-p/snapshot/targzhelper"
@@ -51,7 +53,12 @@ func takeSnapshot() {
 }
 
 func showLogs() {
-	fmt.Println("These are your snapshot logs")
+	filepath.Walk("./.snapshots", func(fileName string, fileInfo os.FileInfo, err error) error {
+		if !fileInfo.IsDir() {
+			fmt.Println(strings.TrimPrefix(fileName, ".snapshots/"))
+		}
+		return nil
+	})
 }
 
 func showInvalidOption(option string) {
