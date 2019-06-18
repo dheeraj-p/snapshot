@@ -13,7 +13,7 @@ import (
 type snapshot struct {
 	Message   string
 	Timestamp int64
-	Sha       string
+	FileName  string
 }
 
 var snapshots map[string]snapshot
@@ -56,7 +56,7 @@ func takeSnapshot() (string, error) {
 	formattedTimeStamp := formatTimeStamp(timestamp, "2006_01_02_15_04_05")
 	destination := fmt.Sprintf("%s/snapshot_%s.tar.gz", snapshotsDirName, formattedTimeStamp)
 
-	snapshots[destination] = snapshot{message, timestamp, sha}
+	snapshots[sha] = snapshot{message, timestamp, destination}
 
 	file, err := os.Create(destination)
 
@@ -73,17 +73,34 @@ func takeSnapshot() (string, error) {
 	return "Snapshot is successfully taken", nil
 }
 
-func formatLog(sn snapshot) string {
+func formatLog(sn snapshot, sha string) string {
 	timestamp := formatTimeStamp(sn.Timestamp, "Mon Jan _2 15:04:05 2006")
-	return fmt.Sprintf("Snapshot Id:\t%s\nDate:\t%s\n\n\t%s\n", sn.Sha, timestamp, sn.Message)
+	return fmt.Sprintf("Snapshot Id:\t%s\nDate:\t%s\n\n\t%s\n", sha, timestamp, sn.Message)
 }
 
 func showLogs() {
-	for snapshotName := range snapshots {
-		_snapshot := snapshots[snapshotName]
-		log := formatLog(_snapshot)
+	for sha := range snapshots {
+		_snapshot := snapshots[sha]
+		log := formatLog(_snapshot, sha)
 		fmt.Println(log)
 	}
+}
+
+func checkout() {
+	if len(os.Args) < 3 {
+		fmt.Errorf("not enough arguments")
+	}
+
+	sha := os.Args[2]
+	fileName := snapshots[sha].FileName
+
+	file, _ := os.OpenFile(fileName, os.O_RDONLY, 0777)
+	dirname := "checkedout_versions/snapshot_" + sha
+
+	os.MkdirAll(dirname, 0777)
+	targzhelper.Untar(file, dirname)
+
+	fmt.Printf("Checked out version is available in ---> %s\n",dirname)
 }
 
 func showInvalidOption(option string) {
@@ -134,6 +151,11 @@ func main() {
 
 	if option == "logs" {
 		showLogs()
+		return
+	}
+
+	if option == "checkout" {
+		checkout()
 		return
 	}
 
