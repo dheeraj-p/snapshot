@@ -10,6 +10,64 @@ import (
 	"strings"
 )
 
+func extractFile(header tar.Header, reader io.Reader, path string) (rerr error) {
+	fileName := filepath.Join(path, header.Name)
+	file, ferr := os.OpenFile(fileName, os.O_CREATE|os.O_RDWR, header.FileInfo().Mode())
+
+	defer func() {
+		file.Close()
+	}()
+
+	if ferr != nil {
+		return ferr
+	}
+
+	_, err := io.Copy(file, reader)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func extractDir(header tar.Header, reader io.Reader, path string) error {
+	dirName := filepath.Join(path, header.Name)
+	err := os.MkdirAll(dirName, header.FileInfo().Mode())
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func Untar(reader io.Reader, path string) error {
+	gzipReader, err := gzip.NewReader(reader)
+	if err != nil {
+		return err
+	}
+
+	defer func() {
+		gzipReader.Close()
+	}()
+	tarReader := tar.NewReader(gzipReader)
+
+	for header, err := tarReader.Next(); err != io.EOF; header, err = tarReader.Next() {
+		if err != nil {
+			return err
+		}
+		extract := extractFile
+		if header.FileInfo().IsDir() {
+			extract = extractDir
+		}
+
+		if err := extract(*header, tarReader, path); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 func contains(collection []string, text string) bool {
 	for index := range collection {
 		if collection[index] == text {
