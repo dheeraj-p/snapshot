@@ -100,7 +100,7 @@ func checkout() {
 	os.MkdirAll(dirname, 0777)
 	targzhelper.Untar(file, dirname)
 
-	fmt.Printf("Checked out version is available in ---> %s\n",dirname)
+	fmt.Printf("Checked out version is available in ---> %s\n", dirname)
 }
 
 func showInvalidOption(option string) {
@@ -108,9 +108,11 @@ func showInvalidOption(option string) {
 }
 
 func showHelp() {
-	var takeSnapshotHelp = "option: take - To take snapshot of current state"
-	var showLogsHelp = "option: logs - Show info about all the snapshots taken"
-	fmt.Printf("%s\n%s\n", takeSnapshotHelp, showLogsHelp)
+	takeSnapshotHelp := "option: take [message] - To take snapshot of current state"
+	showLogsHelp := "option: logs - Show info about all the snapshots taken"
+	checkoutHelp := "option: checkout [snapshot id]- Checkout a specific snapshot by providing snapshot id"
+	note := "NOTE: Snapshot id can be found under logs"
+	fmt.Printf("%s\n%s\n%s\n\n%s\n", takeSnapshotHelp, showLogsHelp, checkoutHelp, note)
 }
 
 func isNoOptionProvided() bool {
