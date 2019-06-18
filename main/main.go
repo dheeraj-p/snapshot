@@ -1,12 +1,18 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"os"
+	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/dheeraj-p/snapshot/targzhelper"
 )
+
+var snapshotMessages map[string]string
 
 func createDirectoryIfNotExists(dirname string) error {
 	if _, err := os.Stat(dirname); err == nil {
@@ -31,27 +37,38 @@ func setupSnapshotDirectory() {
 	}
 }
 
-func takeSnapshot() {
+func takeSnapshot() (string, error) {
 	var snapshotsDirName = ".snapshots"
+
+	if len(os.Args) < 3 {
+		return "", fmt.Errorf("not enough arguments")
+	}
+
 	destination := fmt.Sprintf("%s/snapshot_%s.tar.gz", snapshotsDirName, formattedTimeStamp())
+	snapshotMessages[destination] = os.Args[2]
+
 	file, err := os.Create(destination)
 
 	if err != nil {
-		fmt.Println(err)
-		return
+		return "", err
 	}
 
 	var dirsToIgnore = []string{snapshotsDirName, ".git"}
 	err = targzhelper.MakeTar("./", file, dirsToIgnore)
 	if err != nil {
-		fmt.Println(err)
+		return "", err
 	}
 
-	fmt.Println("Snapshot is successfully taken")
+	return "Snapshot is successfully taken", nil
 }
 
 func showLogs() {
-	fmt.Println("These are your snapshot logs")
+	filepath.Walk("./.snapshots", func(fileName string, fileInfo os.FileInfo, err error) error {
+		if !fileInfo.IsDir() {
+			fmt.Println(strings.TrimPrefix(fileName, ".snapshots/"))
+		}
+		return nil
+	})
 }
 
 func showInvalidOption(option string) {
@@ -68,8 +85,19 @@ func isNoOptionProvided() bool {
 	return len(os.Args) < 2
 }
 
+func writeToFile() {
+	buffer, _ := json.Marshal(snapshotMessages)
+	f, _ := os.OpenFile(".snapshots/data.json", os.O_CREATE|os.O_WRONLY, 0644)
+	defer f.Close()
+	f.Write(buffer)
+}
+
 func main() {
 	setupSnapshotDirectory()
+
+	snapshotMessages = make(map[string]string)
+	buffer, _ := ioutil.ReadFile(".snapshots/data.json")
+	json.Unmarshal(buffer, &snapshotMessages)
 
 	if isNoOptionProvided() {
 		showHelp()
@@ -79,7 +107,13 @@ func main() {
 	option := os.Args[1]
 
 	if option == "take" {
-		takeSnapshot()
+		str, err := takeSnapshot()
+		writeToFile()
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+		fmt.Println(str)
 		return
 	}
 

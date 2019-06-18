@@ -37,6 +37,19 @@ func testMakeTarWithInvalidPath(t *testing.T, testDirPath string) {
 	}
 }
 
+func testMakeTarWithInvalidPermission(t *testing.T, testDirPath string) {
+	buffer := bytes.NewBuffer([]byte{})
+	testFilePath := filepath.Join(testDirPath, "dir")
+	os.Mkdir(testFilePath, 0000)
+
+	err := MakeTar(testFilePath, buffer, []string{})
+	expected := fmt.Errorf("during walk open %s: permission denied", testFilePath)
+
+	if !reflect.DeepEqual(err, expected) {
+		t.Errorf("\nEXPECTED === %s\nGOT === %s\n", expected, err)
+	}
+}
+
 func testMakeTarWithFile(t *testing.T, testDirPath string) {
 	buffer := bytes.NewBuffer([]byte{})
 	testFilePath := filepath.Join(testDirPath, "file")
@@ -72,6 +85,7 @@ func TestMakeTar(t *testing.T) {
 	testMakeTarWithInvalidPath(t, snapshotDir)
 	testMakeTarWithFile(t, snapshotDir)
 	testMakeTarWithValidArgs(t, snapshotDir)
+	testMakeTarWithInvalidPermission(t, snapshotDir)
 
 	if err := tearDownForMakeTar(snapshotDir); err != nil {
 		t.Errorf("Could not tearDown tests")
