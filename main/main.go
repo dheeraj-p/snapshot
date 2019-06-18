@@ -5,14 +5,18 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"path/filepath"
-	"strings"
 	"time"
 
 	"github.com/dheeraj-p/snapshot/targzhelper"
 )
 
-var snapshotMessages map[string]string
+type snapshot struct {
+	Message   string
+	Timestamp int64
+	Sha       string
+}
+
+var snapshots map[string]snapshot
 
 func createDirectoryIfNotExists(dirname string) error {
 	if _, err := os.Stat(dirname); err == nil {
@@ -26,8 +30,9 @@ func createDirectoryIfNotExists(dirname string) error {
 	return nil
 }
 
-func formattedTimeStamp() string {
-	return time.Now().Format("2006_01_02_15_04_05")
+func formatTimeStamp(timestamp int64, format string) string {
+	_time := time.Unix(timestamp, 0)
+	return _time.Format(format)
 }
 
 func setupSnapshotDirectory() {
@@ -44,8 +49,14 @@ func takeSnapshot() (string, error) {
 		return "", fmt.Errorf("not enough arguments")
 	}
 
-	destination := fmt.Sprintf("%s/snapshot_%s.tar.gz", snapshotsDirName, formattedTimeStamp())
-	snapshotMessages[destination] = os.Args[2]
+	timestamp := time.Now().Unix()
+	sha := fmt.Sprintf("%x", timestamp)
+	message := os.Args[2]
+
+	formattedTimeStamp := formatTimeStamp(timestamp, "2006_01_02_15_04_05")
+	destination := fmt.Sprintf("%s/snapshot_%s.tar.gz", snapshotsDirName, formattedTimeStamp)
+
+	snapshots[destination] = snapshot{message, timestamp, sha}
 
 	file, err := os.Create(destination)
 
@@ -62,13 +73,17 @@ func takeSnapshot() (string, error) {
 	return "Snapshot is successfully taken", nil
 }
 
+func formatLog(sn snapshot) string {
+	timestamp := formatTimeStamp(sn.Timestamp, "Mon Jan _2 15:04:05 2006")
+	return fmt.Sprintf("Snapshot Id:\t%s\nDate:\t%s\n\n\t%s\n", sn.Sha, timestamp, sn.Message)
+}
+
 func showLogs() {
-	filepath.Walk("./.snapshots", func(fileName string, fileInfo os.FileInfo, err error) error {
-		if !fileInfo.IsDir() {
-			fmt.Println(strings.TrimPrefix(fileName, ".snapshots/"))
-		}
-		return nil
-	})
+	for snapshotName := range snapshots {
+		_snapshot := snapshots[snapshotName]
+		log := formatLog(_snapshot)
+		fmt.Println(log)
+	}
 }
 
 func showInvalidOption(option string) {
@@ -86,7 +101,7 @@ func isNoOptionProvided() bool {
 }
 
 func writeToFile() {
-	buffer, _ := json.Marshal(snapshotMessages)
+	buffer, _ := json.Marshal(snapshots)
 	f, _ := os.OpenFile(".snapshots/data.json", os.O_CREATE|os.O_WRONLY, 0644)
 	defer f.Close()
 	f.Write(buffer)
@@ -95,9 +110,9 @@ func writeToFile() {
 func main() {
 	setupSnapshotDirectory()
 
-	snapshotMessages = make(map[string]string)
+	snapshots = make(map[string]snapshot)
 	buffer, _ := ioutil.ReadFile(".snapshots/data.json")
-	json.Unmarshal(buffer, &snapshotMessages)
+	json.Unmarshal(buffer, &snapshots)
 
 	if isNoOptionProvided() {
 		showHelp()
