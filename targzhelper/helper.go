@@ -90,7 +90,7 @@ func isParentOf(parentDir string, pathToCheck string) bool {
 	return strings.HasPrefix(pathToCheck, parentDir+"/")
 }
 
-func MakeTar(path string, writer io.Writer, dirsToIgnore []string) error {
+func MakeTar(path string, writer io.Writer, pathToIgnore []string) error {
 	fileInfo, err := os.Stat(path)
 	if err != nil {
 		return fmt.Errorf("Invalid Path %s", err.Error())
@@ -118,11 +118,11 @@ func MakeTar(path string, writer io.Writer, dirsToIgnore []string) error {
 
 		header.Name = strings.TrimPrefix(strings.Replace(fileName, path, "", -1), string(filepath.Separator))
 
-		if contains(dirsToIgnore, header.Name) {
+		if contains(pathToIgnore, header.Name) {
 			return nil
 		}
 
-		if hasParentIn(dirsToIgnore, header.Name) {
+		if hasParentIn(pathToIgnore, header.Name) {
 			return nil
 		}
 

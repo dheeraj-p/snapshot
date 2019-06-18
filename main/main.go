@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/dheeraj-p/snapshot/targzhelper"
@@ -42,6 +43,16 @@ func setupSnapshotDirectory() {
 	}
 }
 
+func getpathToIgnore() []string {
+	buffer, err := ioutil.ReadFile(".signore")
+	if err != nil {
+		return []string{}
+	}
+	fileContent := strings.Trim(string(buffer),"\n")
+	pathToIgnore := strings.Split(fileContent, "\n")
+	return pathToIgnore
+}
+
 func takeSnapshot() (string, error) {
 	var snapshotsDirName = ".snapshots"
 
@@ -64,8 +75,9 @@ func takeSnapshot() (string, error) {
 		return "", err
 	}
 
-	var dirsToIgnore = []string{snapshotsDirName, ".git"}
-	err = targzhelper.MakeTar("./", file, dirsToIgnore)
+	pathToIgnore := getpathToIgnore()
+	
+	err = targzhelper.MakeTar("./", file, pathToIgnore)
 	if err != nil {
 		return "", err
 	}
