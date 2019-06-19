@@ -1,7 +1,6 @@
 package targzhelper
 
 import (
-	"bytes"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -26,10 +25,11 @@ func tearDownForMakeTar(dirPath string) error {
 }
 
 func testMakeTarWithInvalidPath(t *testing.T, testDirPath string) {
-	buffer := bytes.NewBuffer([]byte{})
+	testFilePath := fmt.Sprintf("%s/file%s.tar.gz", testDirPath, time.Now())
+	file, _ := os.Create(testFilePath)
 	invalidDirPath := filepath.Join(testDirPath, "invalidPath")
 
-	err := MakeTar(invalidDirPath, buffer, []string{})
+	err := MakeTar(invalidDirPath, file, []string{})
 	expected := fmt.Errorf("Invalid Path stat %s: no such file or directory", invalidDirPath)
 
 	if !reflect.DeepEqual(err, expected) {
@@ -38,12 +38,13 @@ func testMakeTarWithInvalidPath(t *testing.T, testDirPath string) {
 }
 
 func testMakeTarWithInvalidPermission(t *testing.T, testDirPath string) {
-	buffer := bytes.NewBuffer([]byte{})
-	testFilePath := filepath.Join(testDirPath, "dir")
-	os.Mkdir(testFilePath, 0000)
+	testFilePath := fmt.Sprintf("%s/file%s.tar.gz", testDirPath, time.Now())
+	file, _ := os.Create(testFilePath)
+	testPath := filepath.Join(testDirPath, "dir")
+	os.Mkdir(testPath, 0000)
 
-	err := MakeTar(testFilePath, buffer, []string{})
-	expected := fmt.Errorf("during walk open %s: permission denied", testFilePath)
+	err := MakeTar(testPath, file, []string{})
+	expected := fmt.Errorf("during walk open %s: permission denied", testPath)
 
 	if !reflect.DeepEqual(err, expected) {
 		t.Errorf("\nEXPECTED === %s\nGOT === %s\n", expected, err)
@@ -51,12 +52,13 @@ func testMakeTarWithInvalidPermission(t *testing.T, testDirPath string) {
 }
 
 func testMakeTarWithFile(t *testing.T, testDirPath string) {
-	buffer := bytes.NewBuffer([]byte{})
-	testFilePath := filepath.Join(testDirPath, "file")
-	os.Create(testFilePath)
+	testFilePath := fmt.Sprintf("%s/file%s.tar.gz", testDirPath, time.Now())
+	file, _ := os.Create(testFilePath)
+	testPath := filepath.Join(testDirPath, "file")
+	os.Create(testPath)
 
-	err := MakeTar(testFilePath, buffer, []string{})
-	expected := fmt.Errorf("%s is not a directory", testFilePath)
+	err := MakeTar(testPath, file, []string{})
+	expected := fmt.Errorf("%s is not a directory", testPath)
 
 	if !reflect.DeepEqual(err, expected) {
 		t.Errorf("\nEXPECTED === %s\nGOT === %s\n", expected, err)
@@ -64,11 +66,12 @@ func testMakeTarWithFile(t *testing.T, testDirPath string) {
 }
 
 func testMakeTarWithValidArgs(t *testing.T, testDirPath string) {
-	buffer := bytes.NewBuffer([]byte{})
-	testFilePath := filepath.Join(testDirPath, "validDir")
-	os.Mkdir(testFilePath, 0777)
+	testFilePath := fmt.Sprintf("%s/file%s.tar.gz", testDirPath, time.Now())
+	file, _ := os.Create(testFilePath)
+	testPath := filepath.Join(testDirPath, "validDir")
+	os.Mkdir(testPath, 0777)
 
-	err := MakeTar(testFilePath, buffer, []string{})
+	err := MakeTar(testPath, file, []string{})
 	if err != nil {
 		t.Errorf("Unexpected error occured %s", err.Error())
 	}
@@ -90,4 +93,47 @@ func TestMakeTar(t *testing.T) {
 	if err := tearDownForMakeTar(snapshotDir); err != nil {
 		t.Errorf("Could not tearDown tests")
 	}
+}
+
+func setUpForUntar() (string, string) {
+	testDirPath, _ := setUpForMakeTar()
+	testFilePath := fmt.Sprintf("%s/file%s.tar.gz", testDirPath, time.Now())
+	file, _ := os.Create(testFilePath)
+	testPath := filepath.Join(testDirPath, "validDir")
+	os.Mkdir(testPath, 0777)
+
+	MakeTar(testPath, file, []string{})
+	return testFilePath, testDirPath
+}
+
+func testUntarWithValidArgs(t *testing.T, testDirPath, tarFilePath string) {
+	file, _ := os.OpenFile(tarFilePath, os.O_RDONLY, 0555)
+
+	err := Untar(file, testDirPath)
+
+	if err != nil {
+		t.Errorf("Unexpected error happened %s", err)
+	}
+}
+
+func testUntarWithDirectory(t *testing.T, testDirPath string) {
+	dir := os.TempDir()
+	path, _ := os.OpenFile(dir, os.O_RDONLY, 0555)
+	defer func() {
+		os.RemoveAll(dir)
+	}()
+
+	err := Untar(path, testDirPath)
+	expected := fmt.Sprintf("read %s: is a directory", path.Name())
+
+	if !reflect.DeepEqual(err.Error(), expected) {
+		t.Errorf("\nEXPECTED === %s\nGOT === %s\n", expected, err)
+	}
+}
+
+func TestUntar(t *testing.T) {
+	tarFilePath, testDirPath := setUpForUntar()
+
+	testUntarWithValidArgs(t, testDirPath, tarFilePath)
+	testUntarWithDirectory(t, testDirPath)
 }
