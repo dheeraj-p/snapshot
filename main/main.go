@@ -155,14 +155,25 @@ func writeToFile() {
 	f.Write(buffer)
 }
 
+func createDataIfNotExists(fileName string) {
+	if _, err := os.Stat(fileName); err != nil {
+		file, _ := os.Create(fileName)
+		file.WriteString("{}")
+	}
+}
+
 func main() {
 	err := setupSnapshotDirectory()
 	if err != nil {
 		logError(err)
 	}
 
+	dataFilePath := ".snapshots/data.json"
 	snapshots = make(map[string]snapshot)
-	buffer, err := ioutil.ReadFile(".snapshots/data.json")
+
+	createDataIfNotExists(dataFilePath)
+	
+	buffer, err := ioutil.ReadFile(dataFilePath)
 	if err != nil {
 		logError(err)
 	}
