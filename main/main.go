@@ -159,20 +159,17 @@ func main() {
 	err := setupSnapshotDirectory()
 	if err != nil {
 		logError(err)
-		return
 	}
 
 	snapshots = make(map[string]snapshot)
 	buffer, err := ioutil.ReadFile(".snapshots/data.json")
 	if err != nil {
 		logError(err)
-		return
 	}
 
 	err = json.Unmarshal(buffer, &snapshots)
 	if err != nil {
 		logError(err)
-		return
 	}
 
 	if isNoOptionProvided() {
@@ -187,7 +184,6 @@ func main() {
 		writeToFile()
 		if err != nil {
 			logError(err)
-			return
 		}
 		fmt.Println(str)
 		return
@@ -202,7 +198,6 @@ func main() {
 		err := checkout()
 		if err != nil {
 			logError(err)
-			return
 		}
 		return
 	}
