@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"os"
 	"strings"
 	"time"
@@ -18,6 +19,10 @@ type snapshot struct {
 }
 
 var snapshots map[string]snapshot
+
+func logError(err error) {
+	log.Fatal(err)
+}
 
 func createDirectoryIfNotExists(dirname string) error {
 	if _, err := os.Stat(dirname); err == nil {
@@ -36,10 +41,11 @@ func formatTimeStamp(timestamp int64, format string) string {
 	return _time.Format(format)
 }
 
-func setupSnapshotDirectory() {
+func setupSnapshotDirectory() error {
 	if err := createDirectoryIfNotExists(".snapshots"); err != nil {
-		fmt.Println(err)
+		return err
 	}
+	return nil
 }
 
 func getpathToIgnore() []string {
@@ -47,7 +53,7 @@ func getpathToIgnore() []string {
 	if err != nil {
 		return []string{}
 	}
-	fileContent := strings.Trim(string(buffer),"\n")
+	fileContent := strings.Trim(string(buffer), "\n")
 	pathToIgnore := strings.Split(fileContent, "\n")
 	return pathToIgnore
 }
@@ -75,7 +81,7 @@ func takeSnapshot() (string, error) {
 	}
 
 	pathToIgnore := getpathToIgnore()
-	
+
 	err = targzhelper.MakeTar("./", file, pathToIgnore)
 	if err != nil {
 		return "", err
@@ -97,21 +103,33 @@ func showLogs() {
 	}
 }
 
-func checkout() {
+func checkout() error {
 	if len(os.Args) < 3 {
-		fmt.Errorf("not enough arguments")
+		return fmt.Errorf("not enough arguments")
 	}
 
 	sha := os.Args[2]
 	fileName := snapshots[sha].FileName
 
-	file, _ := os.OpenFile(fileName, os.O_RDONLY, 0777)
+	file, err := os.OpenFile(fileName, os.O_RDONLY, 0777)
+	if err != nil {
+		return err
+	}
+
 	dirname := "checkedout_versions/snapshot_" + sha
 
-	os.MkdirAll(dirname, 0777)
-	targzhelper.Untar(file, dirname)
+	err = os.MkdirAll(dirname, 0777)
+	if err != nil {
+		return err
+	}
+
+	err = targzhelper.Untar(file, dirname)
+	if err != nil {
+		return err
+	}
 
 	fmt.Printf("Checked out version is available in ---> %s\n", dirname)
+	return nil
 }
 
 func showInvalidOption(option string) {
@@ -138,11 +156,24 @@ func writeToFile() {
 }
 
 func main() {
-	setupSnapshotDirectory()
+	err := setupSnapshotDirectory()
+	if err != nil {
+		logError(err)
+		return
+	}
 
 	snapshots = make(map[string]snapshot)
-	buffer, _ := ioutil.ReadFile(".snapshots/data.json")
-	json.Unmarshal(buffer, &snapshots)
+	buffer, err := ioutil.ReadFile(".snapshots/data.json")
+	if err != nil {
+		logError(err)
+		return
+	}
+
+	err = json.Unmarshal(buffer, &snapshots)
+	if err != nil {
+		logError(err)
+		return
+	}
 
 	if isNoOptionProvided() {
 		showHelp()
@@ -155,7 +186,7 @@ func main() {
 		str, err := takeSnapshot()
 		writeToFile()
 		if err != nil {
-			fmt.Println(err)
+			logError(err)
 			return
 		}
 		fmt.Println(str)
@@ -168,7 +199,11 @@ func main() {
 	}
 
 	if option == "checkout" {
-		checkout()
+		err := checkout()
+		if err != nil {
+			logError(err)
+			return
+		}
 		return
 	}
 
