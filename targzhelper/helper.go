@@ -15,7 +15,8 @@ func extractFile(header tar.Header, reader io.Reader, path string) (rerr error) 
 	file, ferr := os.OpenFile(fileName, os.O_CREATE|os.O_RDWR, header.FileInfo().Mode())
 
 	defer func() {
-		file.Close()
+		err := file.Close()
+		fmt.Errorf("error while closing the file %s", err)
 	}()
 
 	if ferr != nil {
@@ -34,6 +35,7 @@ func extractFile(header tar.Header, reader io.Reader, path string) (rerr error) 
 func extractDir(header tar.Header, reader io.Reader, path string) error {
 	dirName := filepath.Join(path, header.Name)
 	err := os.MkdirAll(dirName, header.FileInfo().Mode())
+
 	if err != nil {
 		return err
 	}
@@ -47,7 +49,8 @@ func Untar(reader io.Reader, path string) error {
 	}
 
 	defer func() {
-		gzipReader.Close()
+		err := gzipReader.Close()
+		fmt.Errorf("error closing the reader %s", err)
 	}()
 	tarReader := tar.NewReader(gzipReader)
 
@@ -134,11 +137,11 @@ func MakeTar(path string, writer io.Writer, pathToIgnore []string) error {
 			return err
 		}
 
-		if !fileInfo.Mode().IsRegular() {
-			return nil
-		}
-
 		file, err := os.Open(fileName)
+		defer func() {
+			err := file.Close()
+			fmt.Errorf("error while closing the file %s", err)
+		}()
 
 		if err != nil {
 			return err
@@ -148,7 +151,6 @@ func MakeTar(path string, writer io.Writer, pathToIgnore []string) error {
 			return err
 		}
 
-		file.Close()
 		return nil
 	})
 }

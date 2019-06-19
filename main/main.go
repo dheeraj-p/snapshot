@@ -38,7 +38,6 @@ func formatTimeStamp(timestamp int64, format string) string {
 
 func setupSnapshotDirectory() {
 	if err := createDirectoryIfNotExists(".snapshots"); err != nil {
-		fmt.Println("Came Here")
 		fmt.Println(err)
 	}
 }
