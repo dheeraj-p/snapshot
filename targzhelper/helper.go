@@ -137,6 +137,10 @@ func MakeTar(path string, writer io.Writer, pathToIgnore []string) error {
 			return err
 		}
 
+		if !fileInfo.Mode().IsRegular() {
+			return nil
+		}
+
 		file, err := os.Open(fileName)
 		defer func() {
 			err := file.Close()
