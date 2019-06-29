@@ -122,7 +122,7 @@ func showLogs() {
 	}
 }
 
-func checkout() error {
+func checkout(snapshotBaseDir string) error {
 	if len(os.Args) < 3 {
 		return fmt.Errorf("not enough arguments")
 	}
@@ -135,7 +135,7 @@ func checkout() error {
 		return err
 	}
 
-	dirname := "checkedout_versions/snapshot_" + sha
+	dirname := snapshotBaseDir + "/checkedout_versions/snapshot_" + sha
 
 	err = os.MkdirAll(dirname, 0777)
 	if err != nil {
@@ -228,7 +228,7 @@ func main() {
 	}
 
 	if option == "checkout" {
-		err := checkout()
+		err := checkout(snapshotDir)
 		if err != nil {
 			logError(err)
 		}
