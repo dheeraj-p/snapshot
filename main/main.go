@@ -161,8 +161,9 @@ func showHelp() {
 	takeSnapshotHelp := "option: take [message] - To take snapshot of current state"
 	showLogsHelp := "option: logs - Show info about all the snapshots taken"
 	checkoutHelp := "option: checkout [snapshot id]- Checkout a specific snapshot by providing snapshot id"
+	initHelp := "option: init- Initialize directory as snapshot directory"
 	note := "NOTE: Snapshot id can be found under logs"
-	fmt.Printf("%s\n%s\n%s\n\n%s\n", takeSnapshotHelp, showLogsHelp, checkoutHelp, note)
+	fmt.Printf("%s\n\n%s\n\n%s\n\n%s\n\n%s\n", takeSnapshotHelp, showLogsHelp, checkoutHelp, initHelp, note)
 }
 
 func isNoOptionProvided() bool {
