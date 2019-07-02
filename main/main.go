@@ -109,7 +109,7 @@ func validate(path string) string {
 		paths := strings.Split(path, "/")
 		basePath := strings.Join(paths[:len(paths)-1], "/")
 		if basePath == "/Users" {
-			log.Fatal("This is not a snapshot directory")
+			log.Fatal("This is not a snapshot directory. Use snapshot init to initialize snapshot")
 		}
 		return validate(basePath)
 	}
@@ -184,18 +184,28 @@ func createDataIfNotExists(fileName string) {
 }
 
 func main() {
-	currentPath, _ := os.Getwd()
-	snapshotDir := validate(currentPath)
-
-	err := setupSnapshotDirectory(snapshotDir)
-	if err != nil {
-		logError(err)
+	if isNoOptionProvided() {
+		showHelp()
+		return
 	}
+
+	option := os.Args[1]
+	currentPath, _ := os.Getwd()
+
+	if option == "init" {
+		err := setupSnapshotDirectory(currentPath)
+		if err != nil {
+			logError(err)
+		}
+		createDataIfNotExists(currentPath + "/.snapshots/data.json")
+		fmt.Print(currentPath + "is initialized as snapshot directory")
+		return
+	}
+
+	snapshotDir := validate(currentPath)
 
 	dataFilePath := snapshotDir + "/.snapshots/data.json"
 	snapshots = make(map[string]snapshot)
-
-	createDataIfNotExists(dataFilePath)
 
 	buffer, err := ioutil.ReadFile(dataFilePath)
 	if err != nil {
@@ -206,13 +216,6 @@ func main() {
 	if err != nil {
 		logError(err)
 	}
-
-	if isNoOptionProvided() {
-		showHelp()
-		return
-	}
-
-	option := os.Args[1]
 
 	if option == "take" {
 		str, err := takeSnapshot(snapshotDir)
