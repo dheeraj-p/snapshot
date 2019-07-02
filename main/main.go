@@ -199,6 +199,11 @@ func main() {
 			logError(err)
 		}
 		createDataIfNotExists(currentPath + "/.snapshots/data.json")
+
+		signoreFilePath := currentPath + "/.signore"
+		file, _ := os.Create(signoreFilePath)
+		file.WriteString(".snapshots\ncheckedout_versions")
+
 		fmt.Print(currentPath + "is initialized as snapshot directory")
 		return
 	}
