@@ -6,7 +6,6 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
-	"path/filepath"
 	"strings"
 	"time"
 
@@ -98,17 +97,20 @@ func formatLog(sn snapshot, sha string) string {
 
 func validate(path string) string {
 	hasSnapshotDir := false
-	filepath.Walk(path, func(fileName string, fileInfo os.FileInfo, err error) error {
-		if fileInfo.IsDir() && fileInfo.Name() == ".snapshots" {
+	files, _ := ioutil.ReadDir(path)
+
+	for _, f := range files {
+		if f.IsDir() && f.Name() == ".snapshots"{
 			hasSnapshotDir = true
-			return nil
 		}
-		return nil
-	})
+	}
 
 	if !hasSnapshotDir {
 		paths := strings.Split(path, "/")
 		basePath := strings.Join(paths[:len(paths)-1], "/")
+		if basePath == "/Users" {
+			log.Fatal("This is not a snapshot directory")
+		}
 		return validate(basePath)
 	}
 	return path
