@@ -81,7 +81,7 @@ func TestMakeTar(t *testing.T) {
 	snapshotDir, err := setUpForMakeTar()
 
 	if err != nil {
-		t.Errorf("Could not setup tests")
+		t.Errorf("Could not setup tests %s", err.Error())
 		return
 	}
 
