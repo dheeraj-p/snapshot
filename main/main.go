@@ -125,11 +125,12 @@ func showLogs() {
 }
 
 func checkout(snapshotBaseDir string) error {
-	if len(os.Args) < 3 {
+	if len(os.Args) < 4 {
 		return fmt.Errorf("not enough arguments")
 	}
 
 	sha := os.Args[2]
+	directory := os.Args[3]
 	fileName := snapshots[sha].FileName
 
 	file, err := os.OpenFile(fileName, os.O_RDONLY, 0777)
@@ -137,7 +138,7 @@ func checkout(snapshotBaseDir string) error {
 		return err
 	}
 
-	dirname := snapshotBaseDir + "/checkedout_versions/snapshot_" + sha
+	dirname := snapshotBaseDir + "/" + directory + "/snapshot_" + sha
 
 	err = os.MkdirAll(dirname, 0777)
 	if err != nil {
@@ -160,7 +161,7 @@ func showInvalidOption(option string) {
 func showHelp() {
 	takeSnapshotHelp := "option: take [message] - To take snapshot of current state"
 	showLogsHelp := "option: logs - Show info about all the snapshots taken"
-	checkoutHelp := "option: checkout [snapshot id]- Checkout a specific snapshot by providing snapshot id"
+	checkoutHelp := "option: checkout [snapshot id] [directory to checkout] - Checkout a specific snapshot by providing snapshot id"
 	initHelp := "option: init- Initialize directory as snapshot directory"
 	note := "NOTE: Snapshot id can be found under logs"
 	fmt.Printf("%s\n\n%s\n\n%s\n\n%s\n\n%s\n", takeSnapshotHelp, showLogsHelp, checkoutHelp, initHelp, note)
