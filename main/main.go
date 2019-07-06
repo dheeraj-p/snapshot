@@ -175,14 +175,18 @@ func writeToFile(snapshotDir string) {
 	f, _ := os.OpenFile(snapshotDir+"/.snapshots/data.json", os.O_CREATE|os.O_WRONLY, 0644)
 	defer f.Close()
 	_, err := f.Write(buffer)
-	log.Fatalf("Error occured while writing to data.json\n %s", err.Error())
+	if err!=nil{
+		log.Fatalf("Error occured while writing to data.json\n %s", err.Error())
+	}
 }
 
 func createDataIfNotExists(fileName string) {
 	if _, err := os.Stat(fileName); err != nil {
 		file, _ := os.Create(fileName)
 		_, err := file.WriteString("{}")
-		log.Fatalf("Error occured initializing data.json\n %s", err.Error())
+		if err!=nil{
+			log.Fatalf("Error occured initializing data.json\n %s", err.Error())
+		}
 	}
 }
 
@@ -205,8 +209,10 @@ func main() {
 		signoreFilePath := currentPath + "/.signore"
 		file, _ := os.Create(signoreFilePath)
 		_, err = file.WriteString(".snapshots\ncheckedout_versions")
-		log.Fatalf("Error occured while writing to .signore\n %s", err.Error())
-
+		if err!=nil{
+			log.Fatalf("Error occured while writing to .signore\n %s", err.Error())
+		}
+		
 		fmt.Print(currentPath + "is initialized as snapshot directory")
 		return
 	}
