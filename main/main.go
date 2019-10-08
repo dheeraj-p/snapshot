@@ -131,9 +131,20 @@ func checkout(snapshotBaseDir string) error {
 
 	sha := os.Args[2]
 	directory := os.Args[3]
+	signorePath := snapshotBaseDir + "/.signore"
+	file, err := os.OpenFile(signorePath, os.O_APPEND | os.O_WRONLY, 0777)
+	if err != nil {
+		fmt.Println("Error happened while opening .signore file")
+	}
+
+	_, err = file.WriteString("\n" + directory)
+	if err != nil {
+		fmt.Printf("Error happened while writing to signore file")
+	}
+
 	fileName := snapshots[sha].FileName
 
-	file, err := os.OpenFile(fileName, os.O_RDONLY, 0777)
+	file, err = os.OpenFile(fileName, os.O_RDONLY, 0777)
 	if err != nil {
 		return err
 	}
@@ -209,7 +220,7 @@ func main() {
 
 		signoreFilePath := currentPath + "/.signore"
 		file, _ := os.Create(signoreFilePath)
-		_, err = file.WriteString(".snapshots\ncheckedout_versions")
+		_, err = file.WriteString(".snapshots")
 		if err!=nil{
 			log.Fatalf("Error occured while writing to .signore\n %s", err.Error())
 		}
